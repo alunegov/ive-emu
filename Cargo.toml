@@ -1,0 +1,9 @@
+[package]
+name = "ive-emu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.38.0", default-features = false, features = ["full"] }
+tokio-modbus = { version = "0.11.0", default-features = false, features = ["rtu-server"] }
+tokio-serial = "5.4.4"
