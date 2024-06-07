@@ -27,7 +27,7 @@ impl tokio_modbus::server::Service for Service {
                 future::ready(Ok(Response::ReadInputRegisters(regs)))
             }
             Request::WriteMultipleRegisters(addr, data) => {
-                println!("WriteMultipleRegisters, {addr} {{data.len()}}");
+                println!("WriteMultipleRegisters, {addr} {}", data.len());
                 future::ready(Ok(Response::WriteMultipleRegisters(addr, data.len() as u16)))
             }
             _ => future::ready(Err(Exception::IllegalFunction)),
