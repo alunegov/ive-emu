@@ -1,4 +1,4 @@
-use std::{future, thread};
+use std::{env, future, thread};
 
 use tokio_modbus::{prelude::*, server::rtu::Server};
 
@@ -37,10 +37,13 @@ impl tokio_modbus::server::Service for Service {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let builder = tokio_serial::new("COM7", 115200);
+    let mut args = env::args();
+    let port_path = args.nth(1).unwrap_or_else(|| "COM7".into());
+
+    let builder = tokio_serial::new(port_path.clone(), 115200);
     let server_serial = tokio_serial::SerialStream::open(&builder).unwrap();
 
-    println!("Starting up server...");
+    println!("Starting up server on {port_path}...");
     let server = thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let server = Server::new(server_serial);
