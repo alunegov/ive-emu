@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let inc_n_thread = thread::spawn(move || {
         loop {
             let n = &mut n2.lock().unwrap();
-            **n += 1;
+            **n = (*n).wrapping_add(1);
             thread::sleep(Duration::from_millis(55));
         }
     });
