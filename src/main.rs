@@ -21,22 +21,28 @@ impl tokio_modbus::server::Service for Service {
                     regs[(i + 1) as usize] = 0;
                     i += 2;
                 }
+                println!("<== {:?}", regs);
                 future::ready(Ok(Response::ReadHoldingRegisters(regs)))
             }
             Request::ReadInputRegisters(addr, qty) => {
                 println!("ReadInputRegisters, {addr} {qty}");
-                let n = self.n.lock().unwrap();
+                let nn = {
+                    let n = self.n.lock().unwrap();
+                    *n
+                };
                 let mut regs = vec![0; qty.into()];
                 let mut i = 0;
                 while (i + 2) <= qty {
-                    regs[(i + 0) as usize] = *n;
+                    regs[(i + 0) as usize] = nn;
                     regs[(i + 1) as usize] = 0;
                     i += 2;
                 }
+                println!("<== {:?}", regs);
                 future::ready(Ok(Response::ReadInputRegisters(regs)))
             }
             Request::WriteMultipleRegisters(addr, data) => {
                 println!("WriteMultipleRegisters, {addr} {}", data.len());
+                println!("==> {:?}", data);
                 future::ready(Ok(Response::WriteMultipleRegisters(addr, data.len() as u16)))
             }
             _ => future::ready(Err(Exception::IllegalFunction)),
@@ -70,8 +76,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let n2 = n.clone();
     let inc_n_thread = thread::spawn(move || {
         loop {
-            let n = &mut n2.lock().unwrap();
-            **n = (*n).wrapping_add(1);
+            {
+                let n = &mut n2.lock().unwrap();
+                **n = (*n).wrapping_add(1);
+            }
             thread::sleep(Duration::from_millis(55));
         }
     });
