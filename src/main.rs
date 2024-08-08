@@ -30,11 +30,12 @@ impl tokio_modbus::server::Service for Service {
                     let n = self.n.lock().unwrap();
                     *n
                 };
+                let resp = from_float(nn as f32);
                 let mut regs = vec![0; qty.into()];
                 let mut i = 0;
                 while (i + 2) <= qty {
-                    regs[(i + 0) as usize] = nn;
-                    regs[(i + 1) as usize] = 0;
+                    regs[(i + 0) as usize] = resp[0];
+                    regs[(i + 1) as usize] = resp[1];
                     i += 2;
                 }
                 println!("<== {:?}", regs);
@@ -48,6 +49,11 @@ impl tokio_modbus::server::Service for Service {
             _ => future::ready(Err(Exception::IllegalFunction)),
         }
     }
+}
+
+fn from_float(val: f32) -> [u16; 2] {
+    let b = val.to_be_bytes();
+    return [u16::from_be_bytes([b[2], b[3]]), u16::from_be_bytes([b[0], b[1]])];
 }
 
 #[tokio::main]
