@@ -59,14 +59,16 @@ fn from_float(val: f32) -> [u16; 2] {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args();
-    let port_path = args.nth(1).unwrap_or_else(|| "COM7".into());
+    args.next();  // skip program name
+    let port_path = args.next().unwrap_or_else(|| "COM7".into());
+    let port_baudrate = args.next().unwrap_or_else(|| "115200".into()).parse().unwrap();
+    println!("Starting up server on {port_path} at {port_baudrate}, any addr...");
 
-    let builder = tokio_serial::new(port_path.clone(), 115200);
+    let builder = tokio_serial::new(port_path.clone(), port_baudrate);
     let server_serial = tokio_serial::SerialStream::open(&builder).unwrap();
 
     let n = Arc::new(Mutex::new(0));
 
-    println!("Starting up server on {port_path}...");
     let n1 = n.clone();
     let server_thread = thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
