@@ -6,6 +6,26 @@ struct Service {
     n: Arc<Mutex<u16>>,
 }
 
+impl Service {
+    fn make_regs(&self, qty: u16) -> Vec<u16> {
+        let nn = {
+            let n = self.n.lock().unwrap();
+            *n
+        };
+        let resp = from_float(nn as f32);
+
+        let mut regs = vec![0; qty.into()];
+        let mut i = 0;
+        while (i + 2) <= qty {
+            regs[(i + 0) as usize] = resp[0];
+            regs[(i + 1) as usize] = resp[1];
+            i += 2;
+        }
+
+        regs
+    }
+}
+
 impl tokio_modbus::server::Service for Service {
     type Request = SlaveRequest<'static>;
     type Future = future::Ready<Result<Response, Exception>>;
@@ -14,30 +34,13 @@ impl tokio_modbus::server::Service for Service {
         match req.request {
             Request::ReadHoldingRegisters(addr, qty) => {
                 println!("ReadHoldingRegisters, {addr} {qty}");
-                let mut regs = vec![0; qty.into()];
-                let mut i = 0;
-                while (i + 2) <= qty {
-                    regs[(i + 0) as usize] = 1;
-                    regs[(i + 1) as usize] = 0;
-                    i += 2;
-                }
+                let regs = self.make_regs(qty);
                 println!("<== {:?}", regs);
                 future::ready(Ok(Response::ReadHoldingRegisters(regs)))
             }
             Request::ReadInputRegisters(addr, qty) => {
                 println!("ReadInputRegisters, {addr} {qty}");
-                let nn = {
-                    let n = self.n.lock().unwrap();
-                    *n
-                };
-                let resp = from_float(nn as f32);
-                let mut regs = vec![0; qty.into()];
-                let mut i = 0;
-                while (i + 2) <= qty {
-                    regs[(i + 0) as usize] = resp[0];
-                    regs[(i + 1) as usize] = resp[1];
-                    i += 2;
-                }
+                let regs = self.make_regs(qty);
                 println!("<== {:?}", regs);
                 future::ready(Ok(Response::ReadInputRegisters(regs)))
             }
@@ -59,8 +62,7 @@ fn from_float(val: f32) -> [u16; 2] {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args();
-    args.next();  // skip program name
-    let port_path = args.next().unwrap_or_else(|| "COM7".into());
+    let port_path = args.nth(1).unwrap_or_else(|| "COM7".into());
     let port_baudrate = args.next().unwrap_or_else(|| "115200".into()).parse().unwrap();
     println!("Starting up server on {port_path} at {port_baudrate}, any addr...");
 
